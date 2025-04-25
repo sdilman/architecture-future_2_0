@@ -1,0 +1,39 @@
+@startuml Будущее_2.0_Data_Flow
+
+left to right direction
+
+component "Клиники" as clinics {
+  [Веб-UI]
+}
+
+ [Веб-UI] --> [Kafka] : События\n(приём, анализы)
+
+component "Финтех" as fintech {
+  [Платежи API] --> [PostgreSQL] : Транзакции
+  [Платежи API] --> [Kafka] : События платежей
+}
+
+component "ИИ-сервисы" as ai {
+  [ML-модели] --> [Delta Lake] : Чтение признаков
+  [Delta Lake] --> [ML-модели] : Прогнозы
+}
+
+component "Аналитика" as analytics {
+  [Портал] --> [Delta Lake] : SQL-запросы
+  [Delta Lake] --> [Power BI] : Дэшборды
+}
+
+component "Интеграция" as integration {
+  [Kafka] --> [Delta Lake] : Потоковая загрузка
+  [API Gateway] --> [Платежи API] : Маршрутизация (фин. данные)
+  [API Gateway] --> [Портал] : Маршрутизация (мед. данные)
+}
+
+component "Легаси" <<legacy>> as legacy {
+  [Power Builder] --> [Старый DWH] : Данные\n(миграция)
+}
+
+legacy ..> integration : Постепенная\nзамена
+fintech --> analytics : Доступ к отчётам
+
+@enduml
