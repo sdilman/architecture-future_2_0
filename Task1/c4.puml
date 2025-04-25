@@ -1,0 +1,55 @@
+@startuml Будущее_2.0_Lakehouse_Архитектура
+
+left to right direction
+
+rectangle "Портал самообслуживания" {
+  component "Генератор отчётов"
+  component "Power BI"
+}
+
+database "**Data Lakehouse**\n(Delta Lake/Iceberg)" as lakehouse {
+  database "Raw Zone\n(Parquet/JSON)" as raw
+  database "Cleaned Zone\n(Delta)" as cleaned
+  database "Feature Store\n(ML данные)" as features
+}
+
+database "Старый DWH" <<legacy>>
+
+rectangle "Финтех" {
+  database "PostgreSQL"
+}
+
+rectangle "ИИ-сервисы" {
+  component "ML-модели"
+}
+
+rectangle "Клиники" {
+  component "Веб-интерфейс"
+}
+
+rectangle "Клиентский интерфейс оператора" <<legacy>> {
+  component "Power Builder" <<legacy>>
+}
+
+rectangle "Интеграция" {
+  component "Kafka"
+  component "API Gateway"
+}
+
+' Потоки данных
+"Power Builder" --> "Старый DWH" : "Работа с данными"
+"Веб-интерфейс" --> "Kafka" : "События"
+"Kafka" --> lakehouse : "Потоковая загрузка"
+"Старый DWH" --> lakehouse : "Пакетная миграция\n(Spark)"
+
+"Финтех" --> "Kafka"
+"ИИ-сервисы" --> lakehouse : "Чтение признаков"
+"API Gateway" --> lakehouse : "SQL-запросы"
+lakehouse --> "Power BI" : "Данные через Spark"
+lakehouse --> "ML-модели" : "Обучение/инференс"
+
+' Внутренние связи Lakehouse
+raw --> cleaned : "ETL\n(dbt/Spark)"
+cleaned --> features : "Feature Engineering"
+
+@enduml
