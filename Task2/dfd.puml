@@ -2,38 +2,56 @@
 
 left to right direction
 
-component "Клиники" as clinics {
-  [Веб-UI]
+rectangle "Легаси" <<legacy>> as legacy {
+  component "Power Builder" as powerbuilder
+  database "Старый DWH" as olddwh
 }
 
- [Веб-UI] --> [Kafka] : События\n(приём, анализы)
-
-component "Финтех" as fintech {
-  [Платежи API] --> [PostgreSQL] : Транзакции
-  [Платежи API] --> [Kafka] : События платежей
+rectangle "Клиники" as clinics {
+  component "Веб-UI" as webui
 }
 
-component "ИИ-сервисы" as ai {
-  [ML-модели] --> [Delta Lake] : Чтение признаков
-  [Delta Lake] --> [ML-модели] : Прогнозы
+rectangle "Финтех" as fintech {
+  component "Платежи API" as payments
+  database "PostgreSQL" as postgres
 }
 
-component "Аналитика" as analytics {
-  [Портал] --> [Delta Lake] : SQL-запросы
-  [Delta Lake] --> [Power BI] : Дэшборды
+rectangle "ИИ-сервисы" as ai {
+  component "ML-модели" as mlmodels
 }
 
-component "Интеграция" as integration {
-  [Kafka] --> [Delta Lake] : Потоковая загрузка
-  [API Gateway] --> [Платежи API] : Маршрутизация (фин. данные)
-  [API Gateway] --> [Портал] : Маршрутизация (мед. данные)
+rectangle "Аналитика" as analytics {
+  component "Портал" as portal
+  component "Power BI" as powerbi
 }
 
-component "Легаси" <<legacy>> as legacy {
-  [Power Builder] --> [Старый DWH] : Данные\n(миграция)
+rectangle "Интеграция" as integration {
+  component "Kafka" as kafka
+  component "API Gateway" as apigateway
 }
 
+database "Data Lakehouse" as delta {
+  database "Raw Zone" as raw
+  database "Cleaned Zone" as cleaned
+  database "Feature Store" as features
+}
+
+payments --> postgres : Транзакции
+powerbuilder --> olddwh : Данные
+
+webui --> kafka : События\n(приём, анализы)
+payments --> kafka : События платежей
+kafka --> delta : Потоковая загрузка
+apigateway --> payments : Маршрутизация\n(фин. данные)
+apigateway --> portal : Маршрутизация\n(мед. данные)
+mlmodels --> features : Чтение признаков
+features --> mlmodels : Прогнозы
+portal --> delta : SQL-запросы
+delta --> powerbi : Дэшборды
 legacy ..> integration : Постепенная\nзамена
-fintech --> analytics : Доступ к отчётам
+fintech -[hidden]-> analytics : Доступ к отчётам
+
+raw --> cleaned : ETL
+cleaned --> features : Feature Engineering
 
 @enduml

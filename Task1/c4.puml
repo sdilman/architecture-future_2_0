@@ -16,6 +16,7 @@ database "**Data Lakehouse**\n(Delta Lake/Iceberg)" as lakehouse {
 database "Старый DWH" <<legacy>>
 
 rectangle "Финтех" {
+  component "Платежи API"
   database "PostgreSQL"
 }
 
@@ -42,7 +43,7 @@ rectangle "Интеграция" {
 "Kafka" --> lakehouse : "Потоковая загрузка"
 "Старый DWH" --> lakehouse : "Пакетная миграция\n(Spark)"
 
-"Финтех" --> "Kafka"
+"Финтех" --> "Kafka" : "События платежей"
 "ИИ-сервисы" --> lakehouse : "Чтение признаков"
 "API Gateway" --> lakehouse : "SQL-запросы"
 lakehouse --> "Power BI" : "Данные через Spark"
