@@ -1,0 +1,83 @@
+@startuml Будущее_2.0_Доменный_Lakehouse
+
+left to right direction
+
+' === Домены ===
+rectangle "**Медицинский домен**" as medical_domain {
+  rectangle "Клиники" {
+    component "Веб-интерфейс"
+  }
+  rectangle "ИИ-сервисы" {
+    component "ML-модели"
+  }
+}
+
+rectangle "**Финтех-домен**" as fintech_domain {
+  rectangle "Финтех" {
+    component "Платежи API"
+    database "PostgreSQL"
+  }
+}
+
+rectangle "**Аналитический домен**" as analytics_domain {
+  rectangle "Портал самообслуживания" {
+    component "Генератор отчётов"
+    component "Power BI"
+  }
+}
+
+' === Общая инфраструктура ===
+rectangle "**Data Lakehouse**" as lakehouse {
+  database "Мед. данные\n(Delta)" as medical_data
+  database "Фин. данные\n(Delta)" as finance_data
+  database "ML и андитика\n(Delta)" as analyst_metadata
+  
+  medical_data -[hidden]-> finance_data
+  finance_data -[hidden]-> analyst_metadata
+}
+
+rectangle "Интеграция" {
+  component "Kafka"
+  component "API Gateway"
+}
+
+rectangle "Легаси" <<legacy>> {
+  component "Power Builder"
+  database "Старый DWH"
+}
+
+' === Потоки данных ===
+' Медицинский домен
+"Клиники" --> "Kafka" : "События\n(приём, анализы)"
+"Kafka" --> medical_data : "Потоковая загрузка"
+"ML-модели" --> medical_data : "Чтение признаков"
+medical_data --> "ML-модели" : "Прогнозы"
+
+' Финтех-домен
+"Платежи API" --> "Kafka" : "События платежей"
+"Kafka" --> finance_data : "Потоковая загрузка"
+"API Gateway" --> "PostgreSQL" : "Транзакции"
+
+' Аналитический домен
+"Генератор отчётов" --> analyst_metadata : "SQL-запросы"
+analyst_metadata --> "Power BI" : "Дэшборды"
+
+' Легаси и миграция
+"Power Builder" --> "Старый DWH" : "Работа с данными"
+"Старый DWH" --> medical_data : "Миграция\n(Spark)"
+"Старый DWH" --> finance_data : "Миграция\n(Spark)"
+
+' === Разграничение доступа ===
+note top of medical_data
+  **Владелец**: Мед.отдел
+end note
+
+note top of finance_data
+  **Владелец**: Финтех-команда
+end note
+
+note top of analyst_metadata
+  **Владелец**: Аналитики
+end note
+
+@enduml

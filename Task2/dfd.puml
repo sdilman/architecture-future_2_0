@@ -1,0 +1,57 @@
+@startuml Будущее_2.0_Data_Flow
+
+left to right direction
+
+rectangle "Легаси" <<legacy>> as legacy {
+  component "Power Builder" as powerbuilder
+  database "Старый DWH" as olddwh
+}
+
+rectangle "Клиники" as clinics {
+  component "Веб-UI" as webui
+}
+
+rectangle "Финтех" as fintech {
+  component "Платежи API" as payments
+  database "PostgreSQL" as postgres
+}
+
+rectangle "ИИ-сервисы" as ai {
+  component "ML-модели" as mlmodels
+}
+
+rectangle "Аналитика" as analytics {
+  component "Портал" as portal
+  component "Power BI" as powerbi
+}
+
+rectangle "Интеграция" as integration {
+  component "Kafka" as kafka
+  component "API Gateway" as apigateway
+}
+
+database "Data Lakehouse" as delta {
+  database "Raw Zone" as raw
+  database "Cleaned Zone" as cleaned
+  database "Feature Store" as features
+}
+
+payments --> postgres : Транзакции
+powerbuilder --> olddwh : Данные
+
+webui --> kafka : События\n(приём, анализы)
+payments --> kafka : События платежей
+kafka --> delta : Потоковая загрузка
+apigateway --> payments : Маршрутизация\n(фин. данные)
+apigateway --> portal : Маршрутизация\n(мед. данные)
+mlmodels --> features : Чтение признаков
+features --> mlmodels : Прогнозы
+portal --> delta : SQL-запросы
+delta --> powerbi : Дэшборды
+legacy ..> integration : Постепенная\nзамена
+fintech -[hidden]-> analytics : Доступ к отчётам
+
+raw --> cleaned : ETL
+cleaned --> features : Feature Engineering
+
+@enduml
